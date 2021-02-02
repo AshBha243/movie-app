@@ -1,25 +1,109 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
+import MovieList from "./components/MovieList";
+import MovieListHeading from "./components/MovieListHeading";
+import SearchBox from "./components/SearchBox";
+import AddFavourites from "./components/AddFavourites";
+import RemoveFavourites from "./components/RemoveFavourites";
+import Confirm from "./components/Confirm";
 
-function App() {
+const App = () => {
+  const [movies, setMovies] = useState([]);
+  const [favourites, setFavourites] = useState([]);
+  const [searchValue, setSearchValue] = useState("");
+  const [confirm, setConfirm] = useState(false);
+
+  const getMovieRequest = async (searchValue) => {
+    const url = `http://www.omdbapi.com/?s=${searchValue}&apikey=32a1b6a2`;
+
+    const response = await fetch(url);
+    const responseJson = await response.json();
+
+    if (responseJson.Search) {
+      setMovies(responseJson.Search);
+    }
+  };
+
+  useEffect(() => {
+    getMovieRequest(searchValue);
+  }, [searchValue]);
+
+  useEffect(() => {
+    const movieFavourites = JSON.parse(
+      localStorage.getItem("react-movie-app-favourites")
+    );
+    if (movieFavourites) {
+      setFavourites(movieFavourites);
+    }
+  }, []);
+
+  const saveToLocalStorage = (items) => {
+    localStorage.setItem("react-movie -app-favourites", JSON.stringify(items));
+  };
+
+  const addFavouriteMovie = (movie) => {
+    if (!favourites.includes(movie)) {
+      const newFavouriteList = [...favourites, movie];
+
+      setFavourites(newFavouriteList);
+      saveToLocalStorage(newFavouriteList);
+    }
+  };
+
+  const removeFavouriteMovie = (movie) => {
+    const newFavouriteList = favourites.filter(
+      (favourite) => favourite.imdbID !== movie.imdbID
+    );
+
+    setFavourites(newFavouriteList);
+    saveToLocalStorage(newFavouriteList);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <div className="container-fluid movie-app">
+      <h3>
+        <i>EXPERIENCE THE EVER FAST CHECKOUT WITH FAST!!!</i>
+      </h3>
+      <div className="row d-flex align-items-center mt-4 mb-4">
+        <MovieListHeading heading="Movies" />
+        <SearchBox searchValue={searchValue} setSearchValue={setSearchValue} />
+      </div>
+      <div className="row">
+        <MovieList
+          movies={movies}
+          handleFavouritesClick={addFavouriteMovie}
+          favouriteComponent={AddFavourites}
+        />
+      </div>
+      {favourites.length > 0 && (
+        <div>
+          <div className="row d-flex align-items-center mt-4 mb-4">
+            <MovieListHeading heading="Added to the Cart" />
+          </div>
+
+          <div className="row">
+            <MovieList
+              movies={favourites}
+              handleFavouritesClick={removeFavouriteMovie}
+              favouriteComponent={RemoveFavourites}
+            />
+          </div>
+        </div>
+      )}
+      {favourites.length > 0 && (
+        <button
+          className="btn-success m-1 padding:2px float-right "
+          onClick={() => {
+            setConfirm(true);
+          }}
         >
-          Learn React
-        </a>
-      </header>
+          Checkout
+        </button>
+      )}
+      {confirm === true && <Confirm />}
     </div>
   );
-}
+};
 
 export default App;
